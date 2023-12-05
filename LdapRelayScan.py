@@ -171,6 +171,7 @@ def DoesLdapsCompleteHandshake(dcIp):
     ssl_context.verify_mode = ssl.CERT_NONE
     ssl_sock = ssl_context.wrap_socket(s)
     ssl_sock.connect((dcIp, 636))
+
     try:
         ssl_sock.do_handshake()
         ssl_sock.close()
@@ -221,80 +222,67 @@ def parse_args():
         + "This requires a successful LDAP bind.",
     )
     parser.add_argument(
-        "-method",
+        "-m", "--method",
         choices=["LDAPS", "BOTH"],
         default="LDAPS",
-        metavar="method",
-        action="store",
         help="LDAPS or BOTH - LDAPS checks for channel binding, BOTH checks for "
         "LDAP signing and LDAP channel binding [authentication required]",
     )
     parser.add_argument(
-        "-dc-ip",
-        required=True,
-        action="store",
+        "dc_ip",
         help="DNS Nameserver on network. Any DC's IPv4 address should work.",
     )
     parser.add_argument(
-        "-u",
-        default="guest",
-        metavar="username",
+        "-u", "--username",
         action="store",
         help="Domain username value.",
     )
     parser.add_argument(
-        "-timeout",
+        "-t", "--timeout",
         default=10,
-        metavar="timeout",
         action="store",
         type=int,
         help="The timeout for MSLDAP client connection.",
     )
     parser.add_argument(
-        "-p",
-        default="defaultpass",
-        metavar="password",
-        action="store",
+        "-p", "--password",
         help="Domain username value.",
     )
     parser.add_argument(
-        "-nthash", metavar="nthash", action="store", help="NT hash of password"
+        "--nthash", metavar="nthash", action="store", help="NT hash of password"
     )
     options = parser.parse_args()
-    domainUser = options.u
-
-    password = options.p
 
     if len(sys.argv) == 1:
         parser.print_help()
         sys.exit(1)
 
-    if options.dc_ip is None:
-        print("-dc-ip is required")
-        exit()
     if options.method == "BOTH":
-        if domainUser == "guest":
+        if options.username is None:
             print("[*] Using BOTH method requires a username parameter")
             exit()
     if (
         options.method == "BOTH"
-        and options.u != "guest"
-        and (options.p != "defaultpass" or options.nthash is not None)
+        and options.username is not None
+        and (options.password is not None or options.nthash is not None)
     ):
-        if options.p == "defaultpass" and options.nthash is not None:
+        if options.password is None and options.nthash is not None:
             password = "aad3b435b51404eeaad3b435b51404ee:" + options.nthash
-        elif options.p != "defaultpass" and options.nthash is None:
-            password = options.p
+        elif options.password is not None and options.nthash is None:
+            password = options.password
         else:
             print("[!] Something incorrect while providing credential material options")
 
     if (
         options.method == "BOTH"
-        and options.p == "defaultpass"
+        and options.password is None
         and options.nthash is None
     ):
         password = getpass.getpass(prompt="Password: ")
     fqdn = InternalDomainFromAnonymousLdap(options.dc_ip)
+
+    domainUser = options.username or "guest"
+    password = options.password or "default"
 
     print("[*] Checking DCs for LDAP NTLM relay protections")
     username = fqdn + "\\" + domainUser

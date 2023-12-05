@@ -1,3 +1,10 @@
+This is a fork of
+[zyn3rgy/LdapRelayScan](https://github.com/zyn3rgy/LdapRelayScan). It has
+been modified to adhere to some common conventions and has been packaged to
+make it installable by pip. Also, a feature to report findings to a JSON
+file has been added.
+
+------
 
 # LDAP Relay Scan 
 A tool to check Domain Controllers for LDAP server protections regarding the relay of NTLM authentication. If you're interested in the specifics of the error-based enumeration, see [below](https://github.com/zyn3rgy/LdapRelayScan#error-based-enumeration-specifics). For details regarding what can be done when you identify a lack of LDAP protections, see the [references section](https://github.com/zyn3rgy/LdapRelayScan#references).
@@ -16,6 +23,18 @@ However, to determine if the server-side protection of standard LDAP is enforced
 
 ## Installation 
 It is recommended to use either Docker or a Python virtual environment when running this project.
+
+### Pip/Pipx
+
+Like any properly packaged Python project, this one also can be installed like
+so:
+
+```
+$ pip install .
+```
+
+If you have `pipx` installed, use this to handle virtual environments
+automagically.
 
 ### Docker
 1) Ensure [docker is installed](https://docs.docker.com/engine/install/debian/) on your machine
@@ -47,14 +66,14 @@ The tool has two methods, **LDAPS** (the default), and **BOTH**. LDAPS only requ
 
 ```
 arguments:
-  -h, --help        show this help message and exit
-  -method method    LDAPS or BOTH - LDAPS checks for channel binding, BOTH checks for LDAP signing and LDAP channel binding [authentication required]
-  -dc-ip DC_IP      DNS Nameserver on network. Any DC's IPv4 address should work.
-  -u username       Domain username value.
-  -timeout timeout  The timeout for MSLDAP client connection.
-  -p password       Domain username value.
-  -nthash nthash    NT hash of password
-
+  -h, --help         show this help message and exit
+  --method method    LDAPS or BOTH - LDAPS checks for channel binding, BOTH checks for LDAP signing and LDAP channel binding [authentication required]
+  -u username        Domain username value.
+  --timeout timeout  The timeout for MSLDAP client connection.
+  -p password        Domain username value.
+  --nthash nthash    NT hash of password
+  -r REPORT          path to an output file for a report in JSON
+  DC_IP              DNS Nameserver on network. Any DC's IPv4 address should work.
 ```
 
 ## Examples
@@ -62,10 +81,10 @@ arguments:
 
 ### Basic / Virtual Environment Usage Examples
 ```
-python3 LdapRelayScan.py -method LDAPS -dc-ip 10.0.0.20
-python3 LdapRelayScan.py -method BOTH -dc-ip 10.0.0.20 -u domainuser1 
-python3 LdapRelayScan.py -method BOTH -dc-ip 10.0.0.20 -u domainuser1 -p badpassword2
-python3 LdapRelayScan.py -method BOTH -dc-ip 10.0.0.20 -u domainuser1 -nthash e6ee750a1feb2c7ee50d46819a6e4d25
+ldap-relay-scan --method LDAPS 10.0.0.20
+ldap-relay-scan --method BOTH 10.0.0.20 -u domainuser1
+ldap-relay-scan --method BOTH 10.0.0.20 -u domainuser1 -p badpassword2
+ldap-relay-scan --method BOTH 10.0.0.20 -u domainuser1 --nthash e6ee750a1feb2c7ee50d46819a6e4d25
 ```
 ![](https://github.com/zyn3rgy/LdapRelayScan/blob/main/img/LDAPS_check.PNG?raw=true)
 ![](https://github.com/zyn3rgy/LdapRelayScan/blob/main/img/BOTH_check.PNG?raw=true)
@@ -74,9 +93,9 @@ python3 LdapRelayScan.py -method BOTH -dc-ip 10.0.0.20 -u domainuser1 -nthash e6
 > **NOTE**: The ability to use SOCKS is passed in using a `PROXY_CONFIG` environment variable. If SOCKS is required, the `--network=host` flag will also need to be used to correctly route traffic. See examples below.
 ```
 docker run ldaprelayscan -h
-docker run ldaprelayscan -dc-ip 10.0.0.20
-docker run ldaprelayscan -dc-ip 10.0.0.20 -method BOTH -u domainuser1 -p secretpass
-docker run -e PROXY_CONFIG='socks5 127.0.0.1 9050' --network=host ldaprelayscan -dc-ip 10.0.0.20 -method BOTH -u domainuser1 -p secretpass
+docker run ldaprelayscan 10.0.0.20
+docker run ldaprelayscan 10.0.0.20 --method BOTH -u domainuser1 -p secretpass
+docker run -e PROXY_CONFIG='socks5 127.0.0.1 9050' --network=host ldaprelayscan 10.0.0.20 --method BOTH -u domainuser1 -p secretpass
 
 ```
 

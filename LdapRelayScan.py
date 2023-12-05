@@ -73,7 +73,6 @@ def run_ldaps_noEPA(inputUser, inputPassword, dcTarget):
         else:
             # LDAPS bind successful
             return False  # because channel binding is not enforced
-            exit()
     except Exception as e:
         print(
             "[!] %s - %s - Ensure DNS is resolving properly, and that you can reach LDAPS on this host"

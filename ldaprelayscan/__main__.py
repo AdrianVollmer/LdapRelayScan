@@ -10,9 +10,8 @@ def main():
     args = process_args(options)
     dc_list = args.pop("dc_list")
 
-    if options.report:
-        from ldaprelayscan.report import Report
-        report = Report(options.report)
+    from ldaprelayscan.report import Report
+    report = Report(options.report)
 
     for dc in dc_list:
         scan(dc, report, **args)

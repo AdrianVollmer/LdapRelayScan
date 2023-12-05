@@ -110,11 +110,11 @@ async def run_ldaps_withEPA(inputUser, inputPassword, dcTarget, fqdn, timeout):
         elif "data 52e" in str(err):
             return False
         elif err is not None:
-            print("ERROR while connecting to " + dcTarget + ": " + err)
+            print("[!] ERROR while connecting to " + dcTarget + ": " + err)
         elif err is None:
             return False
     except Exception as e:
-        print("something went wrong during ldaps_withEPA bind:" + str(e))
+        print("[!] something went wrong during ldaps_withEPA bind:" + str(e))
 
 
 # DNS query of an SRV record that should return
@@ -205,7 +205,7 @@ def run_ldap(inputUser, inputPassword, dcTarget):
             )
             exit()
         else:
-            print("UNEXPECTED ERROR: " + ldapConn_result_str)
+            print("[!] UNEXPECTED ERROR: " + ldapConn_result_str)
     else:
         # LDAPS bind successful
         return False  # because LDAP server signing requirements are not enforced
@@ -342,7 +342,7 @@ def scan(dc, username=None, password=None, fqdn=None, method=None, timeout=None)
         elif ldapsChannelBindingAlwaysCheck:
             print('[-] (LDAPS) channel binding set to "required"')
         else:
-            print("\nSomething went wrong...")
+            print("[!] Something went wrong...")
             print(
                 "For troubleshooting:\nldapsChannelBindingAlwaysCheck - "
                 + str(ldapsChannelBindingAlwaysCheck)

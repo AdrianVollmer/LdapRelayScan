@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2", "setuptools-git-versioning<2",]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rldaprelayscan"
+dynamic = ["version"]
+authors = [
+    {name = "Nick Powers"},
+    {name = "Adrian Vollmer", email = "adrian.vollmer@syss.de"},
+]
+description = "A tool to check Domain Controllers for LDAP server protections regarding the relay of NTLM authentication"
+readme = "README.md"
+requires-python = ">=3.10"
+keywords = ["ldap", "relay", "channel binding"]
+license = {text = "MIT License"}
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+]
+dependencies = [
+    'asysocks>=0.2.5',
+    'dnspython',
+    'ldap3',
+    'msldap',
+]
+
+[tool.setuptools]
+packages = ["ldaprelayscan"]
+
+[project.scripts]
+ldap-relay-scan = "ldaprelayscan.__main__:main"
+
+
+[tool.setuptools-git-versioning]
+enabled = true

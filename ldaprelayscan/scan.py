@@ -209,14 +209,18 @@ def run_ldap(inputUser, inputPassword, dcTarget):
         exit()
 
 
-def scan(dc, username=None, password=None, fqdn=None, method=None, timeout=None):
-    print('[*] Scanning %s' % dc)
+def scan(
+    dc, report, username=None, password=None, fqdn=None, method=None, timeout=None
+):
+    print("[*] Scanning %s" % dc)
     if method == "BOTH":
         ldapIsProtected = run_ldap(username, password, dc)
         if not ldapIsProtected:
             print("[+] (LDAP)  SERVER SIGNING REQUIREMENTS NOT ENFORCED!")
+            report.report(dc, 3, "Server signing requirements not enforced")
         elif ldapIsProtected:
             print("[-] (LDAP)  server enforcing signing requirements")
+            report.report(dc, 0, "Server signing requirements is enforced")
 
     if DoesLdapsCompleteHandshake(dc):
         ldapsChannelBindingAlwaysCheck = run_ldaps_noEPA(username, password, dc)
@@ -229,13 +233,16 @@ def scan(dc, username=None, password=None, fqdn=None, method=None, timeout=None)
                 "may prevent an NTLM relay depending on the client's "
                 "support for channel binding."
             )
+            report.report(dc, 2, 'Channel binding set to "when supported"')
         elif (
             not ldapsChannelBindingAlwaysCheck
             and not ldapsChannelBindingWhenSupportedCheck
         ):
             print('[+] (LDAPS) CHANNEL BINDING SET TO "NEVER"')
+            report.report(dc, 3, 'Channel binding set to "NEVER"')
         elif ldapsChannelBindingAlwaysCheck:
             print('[-] (LDAPS) channel binding set to "required"')
+            report.report(dc, 1, 'Channel binding set to "required"')
         else:
             print("[!] Something went wrong...")
             print(
@@ -244,12 +251,13 @@ def scan(dc, username=None, password=None, fqdn=None, method=None, timeout=None)
                 + "\nldapsChannelBindingWhenSupportedCheck: "
                 + str(ldapsChannelBindingWhenSupportedCheck)
             )
-            exit()
+            report.report(dc, 0, "Channel binding not checkable")
         # print("For troubleshooting:\nldapsChannelBindingAlwaysCheck - "
         #       str(ldapsChannelBindingAlwaysCheck)+"\nldapsChannelBindingWhenSupportedCheck: "
         #       str(ldapsChannelBindingWhenSupportedCheck))
 
     else:
+        report.report(dc, 0, "Handshake not completed")
         print(
             "[!] " + dc + " - cannot complete TLS handshake, cert likely not configured"
         )

@@ -69,6 +69,9 @@ def parse_args():
     parser.add_argument(
         "--nthash", metavar="nthash", action="store", help="NT hash of password"
     )
+    parser.add_argument(
+        "-r", "--report", help="path to an output file for a report in JSON"
+    )
     options = parser.parse_args()
     return options
 

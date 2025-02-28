@@ -2,18 +2,18 @@ This is a fork of
 [zyn3rgy/LdapRelayScan](https://github.com/zyn3rgy/LdapRelayScan). It has
 been modified to adhere to some common conventions and has been packaged to
 make it installable by pip. Also, a feature to report findings to a JSON
-file has been added.
+file has been added, as well as cross-domain authentication.
 
 ------
 
-# LDAP Relay Scan 
+# LDAP Relay Scan
 A tool to check Domain Controllers for LDAP server protections regarding the relay of NTLM authentication. If you're interested in the specifics of the error-based enumeration, see [below](https://github.com/zyn3rgy/LdapRelayScan#error-based-enumeration-specifics). For details regarding what can be done when you identify a lack of LDAP protections, see the [references section](https://github.com/zyn3rgy/LdapRelayScan#references).
 ## Summary
 There are a couple server-side protections when attempting to relay NTLM authentication LDAP on Domain Controllers. The LDAP protections this tools attempts to enumerate include:
  - LDAPS - [channel binding](https://support.microsoft.com/en-us/topic/use-the-ldapenforcechannelbinding-registry-entry-to-make-ldap-authentication-over-ssl-tls-more-secure-e9ecfa27-5e57-8519-6ba3-d2c06b21812e)
  - LDAP - [server signing requirements](https://docs.microsoft.com/en-us/windows/security/threat-protection/security-policy-settings/domain-controller-ldap-server-signing-requirements)
 
-The enforcement of channel binding for LDAP over SSL/TLS can be determined from an **unauthenticated** perspective. This is because the error associated with an LDAP client lacking the ability to conduct channel binding properly will occur before credentials are validated during the LDAP bind process. 
+The enforcement of channel binding for LDAP over SSL/TLS can be determined from an **unauthenticated** perspective. This is because the error associated with an LDAP client lacking the ability to conduct channel binding properly will occur before credentials are validated during the LDAP bind process.
 
 However, to determine if the server-side protection of standard LDAP is enforced (server signing integrity requirements) the clients credential's must first be validated during the LDAP bind. The potential error identifying the enforcement of this protection is identified from an **authenticated** perspective.
 
@@ -21,7 +21,7 @@ However, to determine if the server-side protection of standard LDAP is enforced
 
 #### TL;DR - LDAPS can be checked unauthenticated, but checking LDAP requires authentication.
 
-## Installation 
+## Installation
 It is recommended to use either Docker or a Python virtual environment when running this project.
 
 ### Pip/Pipx
@@ -102,7 +102,7 @@ docker run -e PROXY_CONFIG='socks5 127.0.0.1 9050' --network=host ldaprelayscan 
 ## Error-Based Enumeration Specifics
 
 ### [LDAPS] Channel Binding Token Requirements
-On a Domain Controller that has been patched since [CVE-2017-8563](https://msrc.microsoft.com/update-guide/vulnerability/CVE-2017-8563), the capability to enforce LDAPS channel binding has existed. The specific policy is called `Domain Controller: LDAP server channel binding token requirements` and can be set to either `Never`, `When supported`, or `Always`. This is also [not required by default](https://msrc.microsoft.com/update-guide/en-us/vulnerability/ADV190023) (at the time of writing this). 
+On a Domain Controller that has been patched since [CVE-2017-8563](https://msrc.microsoft.com/update-guide/vulnerability/CVE-2017-8563), the capability to enforce LDAPS channel binding has existed. The specific policy is called `Domain Controller: LDAP server channel binding token requirements` and can be set to either `Never`, `When supported`, or `Always`. This is also [not required by default](https://msrc.microsoft.com/update-guide/en-us/vulnerability/ADV190023) (at the time of writing this).
 
 Decrypting and monitoring LDAP over SSL/TLS traffic on a Domain Controller allowed for the identification of a difference in errors during bind attempts when channel binding is enforced versus when it's not. When attempting a bind to LDAP over SSL/TLS using invalid credentials, you will recieve the expected [resultCode 49](https://ldapwiki.com/wiki/LDAP_INVALID_CREDENTIALS), and in the error message contents you will see `data 52e`.  However, when channel binding is enforced and the LDAP client does not calculate and include the Channel Binding Token (CBT), the resultCode will still be 49, but the error message contents will contain `data 80090346` meaning `SEC_E_BAD_BINDINGS` or that [the client's Supplied Support Provider Interface (SSPI) channel bindings were incorrect](https://ldapwiki.com/wiki/Common%20Active%20Directory%20Bind%20Errors).
 
@@ -118,10 +118,10 @@ First, we need an LDAP client that supports channel binding. [SkelSec's](https:/
 
 ![](https://raw.githubusercontent.com/zyn3rgy/LdapRelayScan/main/img/ntlm_channelbinding_avpair.png)
 
-Intentionally miscalculating this value, when the policy in question is set to `When supported`, will produce the same `data 80090346` error. This gives us the ability to differentiate between all possible settings for this policy as it currently exists, from an unauthenticated perspective. How this value is  purposefully miscalculated is important, because just manually replacing the value during challenge/response will invalidate the [MIC](https://en.hackndo.com/ntlm-relay/#mic---message-integrity-code). 
+Intentionally miscalculating this value, when the policy in question is set to `When supported`, will produce the same `data 80090346` error. This gives us the ability to differentiate between all possible settings for this policy as it currently exists, from an unauthenticated perspective. How this value is  purposefully miscalculated is important, because just manually replacing the value during challenge/response will invalidate the [MIC](https://en.hackndo.com/ntlm-relay/#mic---message-integrity-code).
 
 ### [LDAP] Server Signing Requirements
-On a Domain Controller, the policy called ```Domain Controller: LDAP server signing requirements``` is set to `None`, `Require signing`, or it's just not defined. When not defined, it defaults to not requiring signing (at the time of writing this). The error which identifies this protection as required is when a [sicily NTLM](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-adts/e7d814a5-4cb5-4b0d-b408-09d79988b550) or [simple](https://ldapwiki.com/wiki/Simple%20Authentication) bind attempt responds with a [resultCode of 8](https://ldap.com/ldap-result-code-reference-core-ldapv3-result-codes/#rc-strongerAuthRequired), signifying `strongerAuthRequired`. This will only occur if credentials during the LDAP bind are validated. 
+On a Domain Controller, the policy called ```Domain Controller: LDAP server signing requirements``` is set to `None`, `Require signing`, or it's just not defined. When not defined, it defaults to not requiring signing (at the time of writing this). The error which identifies this protection as required is when a [sicily NTLM](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-adts/e7d814a5-4cb5-4b0d-b408-09d79988b550) or [simple](https://ldapwiki.com/wiki/Simple%20Authentication) bind attempt responds with a [resultCode of 8](https://ldap.com/ldap-result-code-reference-core-ldapv3-result-codes/#rc-strongerAuthRequired), signifying `strongerAuthRequired`. This will only occur if credentials during the LDAP bind are validated.
 
 ![](https://github.com/zyn3rgy/LdapRelayScan/blob/main/img/ldap_strongautherror.PNG?raw=true)
 
@@ -131,6 +131,6 @@ A few invaluable resources for contextualization of this material and how it fit
  - [@_nwodtuhs](https://twitter.com/_nwodtuhs) - [NTLM relay mindmap](https://twitter.com/_nwodtuhs/status/1424433914752421898?s=20)
  - [@_dirkjan](https://twitter.com/_dirkjan) - [PrivExchange](https://dirkjanm.io/abusing-exchange-one-api-call-away-from-domain-admin/), the [ADCS ESC8 write up](https://dirkjanm.io/ntlm-relaying-to-ad-certificate-services/), the [NTLM relay for RBCD write up](https://dirkjanm.io/worst-of-both-worlds-ntlm-relaying-and-kerberos-delegation/), and more
  - [@domchell](https://twitter.com/domchell) - implementation of [Farmer](https://github.com/mdsecactivebreach/Farmer) and [explanation](https://www.mdsec.co.uk/2021/02/farming-for-red-teams-harvesting-netntlm/)
- - [@elad_shamir](https://twitter.com/elad_shamir) - thorough [explanations of abusing RBCD](https://shenaniganslabs.io/2019/01/28/Wagging-the-Dog.html) in [multiple scenarios](https://eladshamir.com/2019/08/08/Lock-Screen-LPE.html), and [shadow credentials](https://posts.specterops.io/shadow-credentials-abusing-key-trust-account-mapping-for-takeover-8ee1a53566ab) 
+ - [@elad_shamir](https://twitter.com/elad_shamir) - thorough [explanations of abusing RBCD](https://shenaniganslabs.io/2019/01/28/Wagging-the-Dog.html) in [multiple scenarios](https://eladshamir.com/2019/08/08/Lock-Screen-LPE.html), and [shadow credentials](https://posts.specterops.io/shadow-credentials-abusing-key-trust-account-mapping-for-takeover-8ee1a53566ab)
  - [@tifkin_](https://twitter.com/tifkin_) & [@topotam77](https://twitter.com/topotam77) - NTLM authentication coercion methods
- - [@skelsec](https://twitter.com/skelsec?lang=en) - [msldap](https://github.com/skelsec/msldap) w/ support for channel binding 
+ - [@skelsec](https://twitter.com/skelsec?lang=en) - [msldap](https://github.com/skelsec/msldap) w/ support for channel binding

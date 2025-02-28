@@ -25,6 +25,7 @@ SOFTWARE.
 
 Modified by Adrian Vollmer in 2023
 """
+
 import argparse
 
 
@@ -45,13 +46,30 @@ def parse_args():
     )
     parser.add_argument(
         "dc_ip",
-        help="DNS Nameserver on network. Any DC's IPv4 address should work.",
+        help="IP address of a DC",
+    )
+    parser.add_argument(
+        "-n",
+        "--ns-ip",
+        default=None,
+        help="IP address of a name server (default: same as dc_ip)",
     )
     parser.add_argument(
         "-u",
         "--username",
         action="store",
-        help="Domain username value.",
+        help="username",
+    )
+    parser.add_argument(
+        "-p",
+        "--password",
+        help="password",
+    )
+    parser.add_argument(
+        "-d",
+        "--domain",
+        default=None,
+        help="domain (FQDN) of the user (default: determine automatically from dc_ip)",
     )
     parser.add_argument(
         "-t",
@@ -60,11 +78,6 @@ def parse_args():
         action="store",
         type=int,
         help="The timeout for MSLDAP client connection.",
-    )
-    parser.add_argument(
-        "-p",
-        "--password",
-        help="Domain username value.",
     )
     parser.add_argument(
         "--nthash", metavar="nthash", action="store", help="NT hash of password"
@@ -99,16 +112,15 @@ def process_args(options):
 
     if options.method == "BOTH" and options.password is None and options.nthash is None:
         password = getpass.getpass(prompt="Password: ")
-    fqdn = InternalDomainFromAnonymousLdap(options.dc_ip)
+    fqdn = options.domain or InternalDomainFromAnonymousLdap(options.dc_ip)
 
     domainUser = options.username or "guest"
     password = options.password or "default"
 
     print("[*] Checking DCs for LDAP NTLM relay protections")
     username = fqdn + "\\" + domainUser
-    # print("VALUES AUTHING WITH:\nUser: "+domainUser+"\nPass: " +password + "\nDomain:  "+fqdn)
 
-    dcList = ResolveDCs(options.dc_ip, fqdn)
+    dcList = ResolveDCs(options.ns_ip or options.dc_ip, fqdn)
     print("[*] Domain Controllers identified")
     for dc in dcList:
         print("   " + dc)

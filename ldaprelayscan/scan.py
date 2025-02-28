@@ -165,10 +165,10 @@ def DoesLdapsCompleteHandshake(dcIp):
     )
     ssl_context.check_hostname = False
     ssl_context.verify_mode = ssl.CERT_NONE
-    ssl_sock = ssl_context.wrap_socket(s)
-    ssl_sock.connect((dcIp, 636))
 
     try:
+        ssl_sock = ssl_context.wrap_socket(s)
+        ssl_sock.connect((dcIp, 636))
         ssl_sock.do_handshake()
         ssl_sock.close()
         return True

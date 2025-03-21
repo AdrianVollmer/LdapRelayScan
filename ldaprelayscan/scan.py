@@ -188,7 +188,9 @@ def DoesLdapsCompleteHandshake(dcIp):
 # requirements are enforced based on potential errors
 # during the bind attempt.
 def run_ldap(inputUser, inputPassword, dcTarget):
-    ldapServer = ldap3.Server(dcTarget, use_ssl=False, port=389, get_info=ldap3.ALL)
+    ldapServer = ldap3.Server(
+        dcTarget, use_ssl=False, port=389, get_info=ldap3.ALL, connect_timeout=5
+    )
     ldapConn = ldap3.Connection(
         ldapServer, user=inputUser, password=inputPassword, authentication=ldap3.NTLM
     )

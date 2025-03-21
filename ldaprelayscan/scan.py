@@ -216,7 +216,12 @@ def scan(
 ):
     print("[*] Scanning %s" % dc)
     if method == "BOTH":
-        ldapIsProtected = run_ldap(username, password, dc)
+        try:
+            ldapIsProtected = run_ldap(username, password, dc)
+        except ldap3.core.exceptions.LDAPSocketOpenError as e:
+            print(f"[!] Error: {e}")
+            return
+
         if not ldapIsProtected:
             print("[+] (LDAP)  SERVER SIGNING REQUIREMENTS NOT ENFORCED!")
             report.report(dc, 3, "Server signing requirements not enforced")
